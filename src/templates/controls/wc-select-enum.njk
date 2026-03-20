@@ -1,0 +1,12 @@
+
+    <div class="row gap-4">
+      <wc-select name="[= fullName =]"
+        lbl-label="[= properSuffix =]"
+        class="col-1"
+        [= required =]>
+        <option value="">Choose...</option>
+[% for val in enumValues %]
+          <option value="[= val =]">[= val | proper =]</option>
+[% endfor %]
+      </wc-select>
+    </div>

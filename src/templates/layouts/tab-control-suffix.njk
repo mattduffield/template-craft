@@ -1,0 +1,18 @@
+
+        </div>
+      </wc-tab-item>
+      <wc-tab-item class="" label="Change Log">
+        <div class="col-1 gap-2 pt-2 pb-5 px-5">
+          {% if RecordID != "create" %}
+          <div hx-get="/{{Template.RoutePrefix}}/change_log?collection={{Template.CollectionName}}&original_id={{RecordID}}"
+               hx-trigger="revealed" hx-swap="innerHTML" hx-indicator="#content-loader" hx-push-url="false">
+            <div class="flex items-center gap-2 text-gray-500 p-4">
+              Loading change history...
+            </div>
+          </div>
+          {% else %}
+          <div class="text-center p-4 text-muted">Save the record to view change history</div>
+          {% endif %}
+        </div>
+      </wc-tab-item>
+    </wc-tab>

@@ -1,0 +1,14 @@
+
+    <div class="row gap-4">
+      <wc-select name="[= fullName =]"
+        mode="chip"
+        class="col-1"
+        lbl-label="[= properSuffix =]"
+        multiple
+        allow-dynamic
+        [= required =]>
+        {% for tag in Record.[= fullName =] %}
+          <option value="{{tag}}" selected>{{tag}}</option>
+        {% endfor %}
+      </wc-select>
+    </div>

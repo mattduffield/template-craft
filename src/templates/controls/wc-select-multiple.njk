@@ -1,0 +1,14 @@
+
+    <div class="row gap-4">
+      <wc-select name="[= fullName =]"
+        mode="chip"
+        class="col-1"
+        lbl-label="[= properSuffix =]"
+        multiple
+        [= required =]>
+        {% set [= suffix =] = Record.[= fullName =] %}
+        {% for item in Lookups.[= uiLookup =].item_list %}
+        <option value="{{item.value}}"{% if [= suffix =] == item.value %} selected{% endif %}>{{item.value}}</option>
+        {% endfor %}
+      </wc-select>
+    </div>

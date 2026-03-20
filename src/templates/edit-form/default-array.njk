@@ -1,0 +1,14 @@
+<h2>[= proper =]</h2>
+      <div class="row flex-wrap p-4 gap-4 border border-solid rounded-md primary-bg-border-color">
+        {% if Record.[= propName =] %}
+          {% for item in Record.[= propName =] %}
+           <div class="theme-aqua flex flex-col p-4 gap-4 xw-300 border border-solid rounded-md primary-border-color card">
+            [= arrayHTML =]
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="no-data p-8 flex flex-col flex-1 justify-center items-center">
+            NO DATA
+          </div>
+        {% endif %}
+      </div>

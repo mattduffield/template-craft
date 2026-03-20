@@ -1,0 +1,16 @@
+{
+  "name": "template-craft",
+  "version": "0.1.0",
+  "description": "Deterministic template generator for Go Kart — converts JSON Schema to complete _template_builder records",
+  "main": "dist/template-craft.js",
+  "scripts": {
+    "build": "node esbuild.config.js",
+    "dev": "python3 -m http.server 3017"
+  },
+  "dependencies": {
+    "nunjucks": "^3.2.4"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  }
+}

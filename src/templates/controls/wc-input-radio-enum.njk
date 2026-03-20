@@ -1,0 +1,12 @@
+
+    <div class="row gap-4">
+      <wc-input name="[= fullName =]"
+        lbl-label="[= properSuffix =]"
+        type="radio"
+        radio-group-class="row modern"
+        value="{{[= record =].[= suffix =]}}">
+[% for val in enumValues %]
+          <option value="[= val =]">[= val | proper =]</option>
+[% endfor %]
+      </wc-input>
+    </div>

@@ -1,0 +1,8 @@
+
+    <div class="row gap-4">
+      <wc-select name="[= fullName =]" class="col-1" [= required =]>
+[% for val in enumValues %]
+          <option value="[= val =]">[= val =]</option>
+[% endfor %]
+      </wc-select>
+    </div>

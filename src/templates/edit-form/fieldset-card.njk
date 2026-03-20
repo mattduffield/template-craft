@@ -1,0 +1,57 @@
+<fieldset class="flex flex-col p-4 gap-4 border border-solid rounded-md primary-bg-border-color">
+        <legend class="text-lg">[= proper =]</legend>
+
+        <div class="flex flex-row flex-1 justify-end">
+            <a class="underline"
+               hx-boost="true"
+               href="/api/generate_card_fragment_by_schema/{{Template.CollectionName}}"
+               hx-target=".card-host"
+               hx-swap="beforeend"
+               hx-indicator="#content-loader"
+               hx-push-url="false"
+               hx-vals="js:{ index: countElements('.card-host .card-item'), schema_slug: '{{Template.Schema}}', property_name: '[= propName =]', record_id: '{{RecordID}}', mode: 'add' }"
+               _="on htmx:afterRequest if detail.successful then
+                  set elem to the first <.no-data/>
+                  if elem
+                    transition the elem's opacity to 0 then settle then remove the elem
+                  end
+                end">
+              Add New
+            </a>
+          </div>
+
+        {% if Record.[= propName =] %}
+        <div class="card-host flex flex-wrap gap-4">
+          {% for item in Record.[= propName =] %}
+          <div class="card-item flex flex-col p-4 gap-4 xw-300 border border-solid rounded-md primary-border-color card relative primary-bg-image-gradient">
+            <a class="underline cursor-pointer absolute top-2 right-2"
+              hx-delete="/api/{{Template.CollectionName}}/{{RecordID}}/[= propName =]/{%forloop.Counter0%}"
+              hx-target="#viewport"
+              hx-swap="none"
+              hx-indicator="#content-loader"
+              hx-params="csrf_token"
+              hx-headers='{ "X-CSRF-Token": "{{CSRFToken}}" }'
+              hx-push-url="false"
+              hx-trigger="confirm:delete"
+              _="on click
+                set result to wc.Prompt.question({ 'title': 'Confirm Remove?', 'text': 'Are you sure you want to remove?' })
+                if result
+                  trigger 'confirm:delete'
+                end
+              end
+              on htmx:afterRequest if detail.successful then
+                  set elem to the closest <.card-item />
+                  transition the elem's opacity to 0 then settle then remove the elem
+              end">
+              X
+            </a>
+            [= arrayHTML =]
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="no-data p-8 flex flex-col flex-1 justify-center items-center">
+            NO DATA
+          </div>
+        {% endif %}
+        </div>
+      </fieldset>

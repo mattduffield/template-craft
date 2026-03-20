@@ -1,0 +1,12 @@
+
+          <wc-tabulator-column
+            field="[= fieldName =]"
+            title="[= properName =]"
+            header-filter="input"
+            header-filter-placeholder=""
+            header-filter-func="starts"
+            header-menu="headerMenu"
+            formatter="linkFormatter"
+            formatter-params='{"routePrefix": "{{Template.RoutePrefix}}", "template": "{{Template.RouteNextTemplateSlug}}", "url": "urlFormatter"}'
+            visible="true"
+            ></wc-tabulator-column>

@@ -1,0 +1,12 @@
+
+    <div class="row gap-4">
+      <wc-input name="[= fullName =]"
+        lbl-label="[= properSuffix =]"
+        class="col-1"
+        type="currency"
+        value="{{Record.[= fullName =]|floatformat:2}}"
+        min="[= min =]"
+        max="[= max =]"
+        [= required =]>
+      </wc-input>
+    </div>

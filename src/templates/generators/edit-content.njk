@@ -1,0 +1,57 @@
+{%extends "__template_name__"%}
+
+  {%block css%}
+  {%endblock%}
+
+  {%block pageContent%}
+  <wc-article-skeleton
+    _="on load
+        WaveHelpers.waitForThenHideAndShow('#article-skeleton', '.page-content', 3000, 500)
+      end
+      ">
+  </wc-article-skeleton>
+
+  <div class="page-content flex flex-col flex-1 py-2 px-3 gap-2 hidden">
+    <div class="flex flex-row gap-3 justify-between items-center">
+      <wc-breadcrumb>
+        <wc-breadcrumb-item label="" link="/{{Template.RoutePrefix}}/home"></wc-breadcrumb-item>
+          <wc-breadcrumb-item label="[= properTemplateSlug =]" link="/{{Template.RoutePrefix}}/{{Template.RoutePrevTemplateSlug}}/list"></wc-breadcrumb-item>
+          <wc-breadcrumb-item label="[= breadcrumbStr =]" link=""></wc-breadcrumb-item>
+      </wc-breadcrumb>
+      <div class="flex flex-row items-center gap-3">
+        <wc-save-split-button
+          method="{{FormMethod}}"
+          form="form#[= templateSlug =]"
+          hx-include="form#[= templateSlug =]"
+          save-url="/{{Template.RoutePrefix}}/{{Template.Slug}}/{{RecordID}}{{QueryParams|querystring}}"
+          save-new-url="/{{Template.RoutePrefix}}/{{Template.Slug}}/create{{QueryParams|querystring}}"
+          save-return-url="/{{Template.RoutePrefix}}/{{Template.RoutePrevTemplateSlug}}/list{{QueryParams|querystring}}">
+        </wc-save-split-button>
+      </div>
+    </div>
+
+    [= wrapperPrefix =]
+
+      <wc-form class="col gap-3"
+        method="{{FormMethod}}"
+        id="[= templateSlug =]"
+        action="/{{Template.RoutePrefix}}/{{Template.Slug}}/{{RecordID}}{{QueryParams|querystring}}"
+        hx-{{FormMethod}}="/{{Template.RoutePrefix}}/{{Template.Slug}}/{{RecordID}}{{QueryParams|querystring}}"
+        >
+        {%include "meta_fields"%}
+
+        [= formHTML =]
+
+        <wc-hotkey keys="ctrl+s" target="button.save-btn"></wc-hotkey>
+      </wc-form>
+    [= wrapperSuffix =]
+  </div>
+  {%endblock%}
+
+  {%block js%}
+[% if functions %]
+   <script id="[= collectionName =]_script">
+    [= functions =]
+   </script>
+[% endif %]
+  {%endblock%}

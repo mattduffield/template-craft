@@ -1,0 +1,14 @@
+
+    <div class="row gap-4">
+      <wc-input name="[= fullName =]"
+        lbl-label="[= proper =]"
+        class="col-1"
+        type="checkbox"
+        value="{{Record.[= fullName =]}}"
+        {% if Record.[= fullName =] %}
+        checked
+        {% endif %}
+        toggle-switch
+        [= required =]>
+      </wc-input>
+    </div>

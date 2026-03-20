@@ -1,0 +1,77 @@
+<fieldset class="row flex-wrap p-4 gap-4 border border-solid rounded-md primary-bg-border-color">
+        <legend class="text-lg">[= proper =]</legend>
+
+        <div class="flex flex-row flex-1 justify-end">
+            <a class="underline"
+               hx-boost="true"
+               href="/api/generate_table_row_fragment_by_schema/{{Template.CollectionName}}"
+               hx-target="#[= tbodyID =]"
+               hx-swap="beforeend"
+               hx-indicator="#content-loader"
+               hx-push-url="false"
+               hx-vals="js:{ index: countElements('#[= tbodyID =] tr'), schema_slug: '{{Template.Schema}}', property_name: '[= propName =]', record_id: '{{RecordID}}', mode: 'add' }"
+               _="on htmx:afterRequest if detail.successful then
+                  set elem to the first <.no-data/>
+                  if elem
+                    transition the elem's opacity to 0 then settle then remove the elem
+                  end
+                end">
+              Add New
+            </a>
+          </div>
+
+        <table class="w-full">
+          <thead class="component-bg-color">
+            <tr>
+              [= thHTML =]
+              <th class="p-2 text-align-left">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="[= tbodyID =]">
+          {% if Record.[= propName =] %}
+            {% for item in Record.[= propName =] %}
+            <tr>
+              [= tdHTML =]
+              <td class="p-2 component-border-color border-b-solid border-b-2">
+                <a class="underline cursor-pointer mr-2"
+                  hx-boost="true"
+                  href="/api/generate_table_row_fragment_by_schema/{{Template.CollectionName}}"
+                  hx-target="closest tr"
+                  hx-swap="outerHTML"
+                  hx-indicator="#content-loader"
+                  hx-push-url="false"
+                  hx-vals="js:{ index: '{%forloop.Counter0%}', schema_slug: '{{Template.Schema}}', property_name: '[= propName =]', record_id: '{{RecordID}}', mode: 'edit' }">
+                  Edit
+                </a>
+                <a class="underline cursor-pointer"
+                  hx-delete="/api/{{Template.CollectionName}}/{{RecordID}}/[= propName =]/{%forloop.Counter0%}"
+                  hx-target="#viewport"
+                  hx-swap="none"
+                  hx-indicator="#content-loader"
+                  hx-params="csrf_token"
+                  hx-headers='{ "X-CSRF-Token": "{{CSRFToken}}" }'
+                  hx-push-url="false"
+                  hx-trigger="confirm:delete"
+                  _="on click
+                    set result to wc.Prompt.question({ 'title': 'Confirm Remove?', 'text': 'Are you sure you want to remove?' })
+                    if result
+                      trigger 'confirm:delete'
+                    end
+                  end
+                  on htmx:afterRequest if detail.successful then
+                     set elem to the closest <tr />
+                     transition the elem's opacity to 0 then settle then remove the elem
+                  end">
+                  Remove
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+          <tr>
+            <td>NO DATA</td>
+          </tr>
+          {% endif %}
+          </tbody>
+        </table>
+        </fieldset>

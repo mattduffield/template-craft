@@ -1,0 +1,116 @@
+{%extends "__template_name__"%}
+
+  {%block pageContent%}
+  <wc-table-skeleton _="on 'wc-tabulator:ready' from body
+                        WaveHelpers.waitForThenHideAndShow('#table-skeleton', '.page-content', 3000, 500)
+                     end">
+  </wc-table-skeleton>
+
+  <div class="page-content flex flex-col flex-1 py-2 px-3 gap-2 hidden">
+    <wc-breadcrumb>
+      <wc-breadcrumb-item label="" link="/{{Template.RoutePrefix}}/home"></wc-breadcrumb-item>
+      <wc-breadcrumb-item label="[= properCollection =]" link=""></wc-breadcrumb-item>
+    </wc-breadcrumb>
+
+    <div class="card p-4">
+      <div class="col-md-12"
+          hx-boost="true"
+          hx-target="#viewport"
+          hx-swap="innerHTML transition:true"
+          hx-push-url="true"
+          hx-indicator="#content-loader"
+          >
+        <div class="row-1 justify-end items-center mb-2">
+          <a class="underline cursor-pointer"
+             href="/{{Template.RoutePrefix}}/{{Template.RouteNextTemplateSlug}}/create">
+            Add New
+          </a>
+        </div>
+
+        <div class="row gap-4">
+          <wc-tabulator
+            class="w-full rounded"
+            id="[= collectionName =]-table"
+            ajax-url="/api/[= collectionName =]?schema_slug={{Template.Schema}}"
+            initial-sort='[= sortStr =]'
+            placeholder="No Data Available"
+            movable-columns="true"
+            movable-rows="true"
+            row-header='{"headerSort":false, "resizable": false, "minWidth":30, "width":30, "rowHandle":true, "formatter":"handle"}'
+            row-context-menu="rowContextMenu"
+            row-height="40"
+            pagination
+            pagination-size="16"
+            pagination-counter="rows"
+            header-visible="true"
+            selectable-rows="true"
+            layout="fitColumns"
+            >
+            <wc-tabulator-func name="onInit">
+              (table) => {
+                table.allowEdit = false;
+              }
+            </wc-tabulator-func>
+            <wc-tabulator-func name="onDelete">
+              (result) => {
+                wc.Prompt.toast({title: 'Delete successful!', type: 'success'});
+              }
+            </wc-tabulator-func>
+            <wc-tabulator-func name="onClone">
+              (row, result) => {
+                console.log('Clone result: ', result);
+                const table = row.getTable();
+                const selectedData = table.getSelectedData();
+                const recordIds = selectedData.map(m => m._id);
+                result.recordIds = recordIds;
+
+                fetch('/api/clone-records', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(result)
+                })
+                .then(response => response.json())
+                .then(data => {
+                  console.log(data);
+                  wc.Prompt.toast({title: 'Clone successful!', type: 'success'});
+                })
+                .catch(error => {
+                  console.error('Error:', error);
+                  wc.Prompt.toast({title: 'Error cloning!', type: 'error'});
+                });
+              }
+            </wc-tabulator-func>
+            <wc-tabulator-column
+              title="Actions"
+              formatter="rowSelection"
+              title-formatter="rowSelection"
+              hoz-align="center"
+              width=45
+              header-sort="false"
+              header-menu="headerMenu"
+              cell-click="toggleSelect"
+              visible="true"
+              ></wc-tabulator-column>
+            <wc-tabulator-column
+              title="#"
+              formatter="pageRowNum"
+              hoz-align="center"
+              width=40
+              header-sort="false"
+              header-menu="headerMenu"
+              ></wc-tabulator-column>
+            [= listHTML =]
+          </wc-tabulator>
+        </div>
+      </div>
+    </div>
+  </div>
+  {%endblock%}
+
+  {%block js%}
+[% if functions %]
+   <script id="[= collectionName =]_script">
+    [= functions =]
+   </script>
+[% endif %]
+  {%endblock%}

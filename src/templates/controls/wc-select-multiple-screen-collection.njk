@@ -1,0 +1,15 @@
+
+    <div class="row gap-4">
+      <wc-select name="[= fullName =]"
+        mode="chip"
+        class="col-1"
+        lbl-label="[= properSuffix =]"
+        multiple
+        url="/api/[= uiCollection =]"
+        display-member="[= uiCollectionDisplayMember =]"
+        value-member="[= uiCollectionValueMember =]"
+        results-member="results"
+        sort="asc"
+        [= required =]>
+      </wc-select>
+    </div>
