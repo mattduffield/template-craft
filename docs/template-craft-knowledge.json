@@ -1,0 +1,416 @@
+{
+  "meta": {
+    "name": "TemplateCraft Knowledge Base",
+    "version": "1.0.0",
+    "description": "Structured documentation for TemplateCraft — an inference-based code generator that converts clean JSON Schema into Go Kart _template_builder and _page documents",
+    "lastUpdated": "2026-03-20"
+  },
+  "overview": {
+    "description": "TemplateCraft is a deterministic, inference-based code generator for the Go Kart low-code framework. It takes a clean JSON Schema (from LiteSpec parseDSL(), no UI annotations) and generates complete _template_builder or _page MongoDB documents by inferring the best Wave CSS components, layout, and structure from schema types and constraints.",
+    "techStack": {
+      "language": "JavaScript ES6+",
+      "buildTool": "esbuild (with .njk loader plugin)",
+      "templateEngine": "Nunjucks (custom delimiters: [% %], [= =])",
+      "output": "IIFE bundle exposing window.templateCraft",
+      "dependencies": ["nunjucks"]
+    },
+    "keyPrinciples": [
+      "Schema describes data, the generator decides presentation — no UI annotations required",
+      "Inference-based — examines type, format, enum, pattern, $ref, and property names to choose controls",
+      "Deterministic — no LLM, no randomness, 100% predictable output",
+      "Dual target — generates both _template_builder (HTML) and _page (json_layout) documents",
+      "Nunjucks templates with custom delimiters avoid Pongo2 syntax conflicts",
+      "Shared inference layer — same control/layout decisions for both output formats"
+    ]
+  },
+  "pipeline": {
+    "description": "TemplateCraft sits at the end of the LiteSpec → Go Kart pipeline",
+    "flow": [
+      "1. LiteSpec DSL → parseDSL() → Clean JSON Schema",
+      "2. JSON Schema → templateCraft.generate() → _template_builder documents (HTML content)",
+      "3. JSON Schema → templateCraft.generatePages() → _page documents (json_layout)",
+      "4. Documents → POST to Go Kart API → MongoDB",
+      "5. Go Kart serves the templates/pages via routes"
+    ]
+  },
+  "api": {
+    "generate": {
+      "description": "Generate _template_builder documents from a JSON Schema",
+      "signature": "generate(schema, options)",
+      "params": {
+        "schema": "Clean JSON Schema with properties, $defs, required, allOf, sort, breadcrumb",
+        "options.collectionName": "MongoDB collection name (optional if schema.title is set)",
+        "options.routePrefix": "'x' (protected) or 'v' (public), default 'x'",
+        "options.templateType": "'tab-control' or 'card', default 'tab-control'",
+        "options.functions": "Optional schema-level JavaScript functions",
+        "options.includeList": "Generate list template, default true",
+        "options.includeEdit": "Generate edit template, default true"
+      },
+      "returns": "Array of _template_builder document objects (typically 2: list + edit)",
+      "example": "const templates = templateCraft.generate(schema, { collectionName: 'client', routePrefix: 'v' });"
+    },
+    "generatePages": {
+      "description": "Generate _page documents from a JSON Schema",
+      "signature": "generatePages(schema, options)",
+      "params": {
+        "schema": "Same clean JSON Schema as generate()",
+        "options.collectionName": "MongoDB collection name (optional if schema.title is set)",
+        "options.routePrefix": "'x' (protected) or 'v' (public), default 'x'",
+        "options.includeList": "Generate list page, default true",
+        "options.includeEdit": "Generate edit page, default true"
+      },
+      "returns": "Array of _page document objects (typically 2: list + edit)",
+      "example": "const pages = templateCraft.generatePages(schema, { collectionName: 'client', routePrefix: 'v' });"
+    },
+    "otherExports": {
+      "generateListContent": "Generate HTML content for a list template",
+      "generateEditContent": "Generate HTML content for an edit template",
+      "generateEditCode": "Generate Code tab JavaScript for edit (runGet, runPut, runPost, runDelete)",
+      "generateListCode": "Generate Code tab JavaScript for list (runList)",
+      "generateFieldRules": "Generate field rules object from allOf conditionals",
+      "generateFieldRulesString": "Generate field rules as JSON string",
+      "generateEditForm": "Generate edit form HTML from normalized properties",
+      "generateEditPageLayout": "Generate json_layout array for edit page",
+      "generateListPageLayout": "Generate json_layout array for list page",
+      "createTemplateDocument": "Create a _template_builder document with all fields",
+      "createPageDocument": "Create a _page document with all fields",
+      "inferControl": "Infer Wave CSS control from a schema property",
+      "inferLayout": "Infer row/fieldset grouping from properties",
+      "inferListCol": "Infer list column configuration from a property",
+      "normalizeProperties": "Convert JSON Schema properties object to iterable array",
+      "resolveRef": "Resolve a $ref to its definition from $defs",
+      "findArrayTypesFromSchema": "Find primitive and non-primitive array fields"
+    }
+  },
+  "inference": {
+    "description": "The inference layer examines schema property characteristics to deterministically choose Wave CSS components and layout grouping. No UI annotations needed.",
+    "controlInference": {
+      "description": "Maps schema property types/constraints to Wave CSS components",
+      "rules": [
+        { "signal": "format: 'uuid' or ObjectId pattern", "templateControl": "input-hidden", "pageControl": "skipped" },
+        { "signal": "type: 'boolean'", "templateControl": "wc-input checkbox toggle-switch", "pageControl": "wc-input-checkbox" },
+        { "signal": "string + enum (2-3 values)", "templateControl": "wc-input radio", "pageControl": "wc-select" },
+        { "signal": "string + enum (4+ values)", "templateControl": "wc-select dropdown", "pageControl": "wc-select" },
+        { "signal": "format: 'email' or name contains 'email'", "templateControl": "wc-input type=email", "pageControl": "wc-input-email" },
+        { "signal": "format: 'date-time' or 'date'", "templateControl": "wc-input type=date", "pageControl": "wc-input-date" },
+        { "signal": "name contains 'phone' or 'tel'", "templateControl": "wc-input type=tel", "pageControl": "wc-input-tel" },
+        { "signal": "name contains 'description', 'notes', 'bio', etc.", "templateControl": "wc-textarea", "pageControl": "wc-textarea" },
+        { "signal": "type: 'integer'", "templateControl": "wc-input type=number step=1", "pageControl": "wc-input-number" },
+        { "signal": "type: 'number' or Decimal128", "templateControl": "wc-input type=currency", "pageControl": "wc-input-currency" },
+        { "signal": "array + items.type: 'string'", "templateControl": "wc-select chip allow-dynamic", "pageControl": "wc-select-multiple" },
+        { "signal": "array + items.$ref", "templateControl": "fieldset-card with add/delete", "pageControl": "fieldset > data-array > data-item" },
+        { "signal": "object + $ref", "templateControl": "fieldset wrapping", "pageControl": "fieldset" },
+        { "signal": "system fields (_id, created_*, modified_*)", "templateControl": "skipped (meta_fields)", "pageControl": "skipped" },
+        { "signal": "string (fallback)", "templateControl": "wc-input type=text", "pageControl": "wc-input" }
+      ],
+      "enumThreshold": "Enums with <= 3 values render as radio buttons; > 3 as select dropdowns (template target only; pages always use wc-select)",
+      "systemFields": ["_id", "created_by", "created_date", "modified_by", "modified_date"]
+    },
+    "layoutInference": {
+      "description": "Groups schema properties into responsive grid rows for form layout",
+      "namePairHeuristics": [
+        ["first_name", "last_name"],
+        ["first_name", "middle_initial", "last_name"],
+        ["email", "phone_number"],
+        ["start_date", "end_date"],
+        ["street", "city", "state", "postal_code"],
+        ["city", "state", "postal_code"],
+        ["latitude", "longitude"]
+      ],
+      "groupingStrategy": [
+        "1. System fields excluded (handled by meta_fields)",
+        "2. Known field pairs matched and grouped into rows",
+        "3. Remaining fields grouped by common underscore prefix",
+        "4. Ungrouped scalars rendered as singles",
+        "5. Objects with $ref become fieldsets with recursive layout",
+        "6. Arrays of objects become fieldset-cards with recursive sub-layout"
+      ],
+      "templateGridClass": "grid-1 sm:grid-2 md:grid-N gap-2",
+      "pageRowType": "row element with child controls"
+    },
+    "listColumnInference": {
+      "description": "Determines list/table column configuration from property types",
+      "rules": [
+        { "signal": "first visible string", "result": "linkFormatter column (navigates to edit)" },
+        { "signal": "subsequent strings", "result": "plain string column with header filter" },
+        { "signal": "boolean", "result": "tickCross formatter with tristate header filter" },
+        { "signal": "system fields", "result": "invisible columns" },
+        { "signal": "objects, arrays", "result": "skipped (not shown in list)" },
+        { "signal": "UUID, ObjectId", "result": "skipped entirely" }
+      ]
+    }
+  },
+  "outputFormats": {
+    "templateBuilder": {
+      "description": "Generates _template_builder documents with hand-written HTML content",
+      "collection": "_template_builder",
+      "routes": "/v/{slug} (public), /x/{slug} (protected)",
+      "baseTemplates": ["base", "loader", "partial-base"],
+      "navigationFields": ["route_next_template_slug", "route_prev_template_slug"],
+      "contentField": "content — Pongo2 HTML markup",
+      "listFormatter": { "formatter": "linkFormatter", "formatterParams": "{\"routePrefix\": \"{{Template.RoutePrefix}}\", \"template\": \"{{Template.RouteNextTemplateSlug}}\", \"url\": \"urlFormatter\"}" },
+      "contextVariables": "Template.RoutePrefix, Template.Slug, Template.RouteNextTemplateSlug, Template.RoutePrevTemplateSlug, Template.Schema, Template.CollectionName",
+      "generatedParts": {
+        "content": "Full Pongo2 HTML — extends __template_name__, block pageContent, wc-article-skeleton, breadcrumb, wc-form, inferred controls, wc-save-split-button, wc-hotkey, meta_fields include",
+        "code": "runGet (CreateNew or FindByID), runPut/runPost (SaveAndValidate with array detection), runDelete (DeleteByID), runList (empty records array)",
+        "field_rules": "JSON from allOf conditionals — visible, required, clearWhenHidden rules"
+      }
+    },
+    "page": {
+      "description": "Generates _page documents with json_layout for wc-page-designer",
+      "collection": "_page",
+      "routes": "/pv/{page_slug} (public), /px/{page_slug} (protected)",
+      "baseTemplates": ["page_base", "loader", "page_partial_base"],
+      "navigationFields": ["route_next_page_slug", "route_prev_page_slug"],
+      "jsonLayoutField": "json_layout — JSON array of layout element nodes",
+      "jsonSchemaField": "json_schema — input schema stringified (loaded from schema selection)",
+      "listFormatter": { "formatter": "link", "formatterParams": "{\"page_id\": \"{{Page.RouteNextPageSlug}}\", \"url\": \"pageFormatter\"}" },
+      "contextVariables": "Page.RoutePrefix, Page.Slug, Page.RouteNextPageSlug, Page.RoutePrevPageSlug, Page.Schema, Screen.CollectionName, Screen.Schema",
+      "generatedParts": {
+        "json_layout": "JSON array — column wrapper, wc-breadcrumb, wc-tab/wc-tab-item (General + Change Log), rows with inferred controls, fieldsets for nested objects, data-array/data-item for arrays",
+        "json_schema": "Input schema passed through as JSON string",
+        "code": "Same as _template_builder — runGet, runPut, runPost, runDelete, runList",
+        "field_rules": "Same as _template_builder — from allOf conditionals"
+      }
+    }
+  },
+  "jsonLayoutStructure": {
+    "description": "The json_layout is a tree of element nodes consumed by wc-page-designer and rendered by Go Kart's GenerateHTMLFromSchemaAndLayout()",
+    "commonProperties": {
+      "data-id": "Unique identifier for each element (random string)",
+      "type": "Element type — determines rendering and available properties",
+      "label": "Display label",
+      "scope": "JSON pointer to schema property for data binding",
+      "css": "CSS class string",
+      "required": "Boolean required flag",
+      "rules": "Array of reactive rule definitions (SHOW, COPY, ENABLE, etc.)",
+      "elements": "Array of child element nodes"
+    },
+    "scopeFormat": {
+      "topLevel": "#/properties/field_name",
+      "nestedInDefs": "#/$defs/definition_name/field_name",
+      "arrayContainer": "#/properties/array_field_name",
+      "breadcrumbLink": "URL path (e.g., /v/home, /v/client_list/list)",
+      "empty": "For layout containers, tabs, decorative elements"
+    },
+    "elementTypes": {
+      "layout": {
+        "column": "Vertical flex container — css typically 'flex-1 px-10 py-2'",
+        "row": "Horizontal flex container for grouping controls",
+        "div": "Generic div wrapper",
+        "hr": "Horizontal rule separator — css typically 'my-4'",
+        "fieldset": "Grouped section with legend label — css typically 'flex flex-col p-4 gap-4 border border-solid rounded-md primary-bg-border-color'"
+      },
+      "formControls": {
+        "wc-input": "Text input — properties: label, scope, css, minlength, maxlength, placeholder, is_readonly, is_disabled, is_required",
+        "wc-input-email": "Email input — same properties as wc-input",
+        "wc-input-tel": "Phone input — same properties as wc-input",
+        "wc-input-date": "Date input — properties: label, scope, css, min, max, is_readonly, is_disabled, is_required",
+        "wc-input-number": "Number input — properties: label, scope, css, min, max, step, is_readonly, is_disabled, is_required",
+        "wc-input-currency": "Currency input — same properties as wc-input-number",
+        "wc-input-checkbox": "Checkbox/toggle — properties: label, scope, css, is_toggle, is_readonly, is_disabled, is_required",
+        "wc-select": "Dropdown select — properties: label, scope, css, is_readonly, is_disabled, is_required; children: wc-option elements",
+        "wc-select-multiple": "Multi-select with chip mode — properties: label, scope, css, mode, is_readonly, is_disabled, allow_dynamic",
+        "wc-select-lookup": "Select populated from a lookup — properties: label, scope, lookupName, lookupCSS",
+        "wc-select-collection": "Select populated from a collection — properties: label, scope, collName, collDisplayMember, collValueMember",
+        "wc-textarea": "Multi-line text — properties: label, scope, css, placeholder, rows, is_readonly, is_disabled, is_required",
+        "wc-code-mirror": "Code editor — properties: name, theme, mode, height, has_line_numbers, value"
+      },
+      "arrayHandling": {
+        "data-array": "Container for repeating items — properties: scope, css, has_add_new; css typically 'card-host flex flex-wrap gap-4'",
+        "data-item": "Individual array item card — css typically 'card-item flex flex-col p-4 gap-4 xw-300 border border-solid rounded-md primary-border-color card relative primary-bg-image-gradient'"
+      },
+      "navigation": {
+        "wc-breadcrumb": "Breadcrumb container — children: wc-breadcrumb-item elements",
+        "wc-breadcrumb-item": "Breadcrumb entry — properties: label, link"
+      },
+      "tabs": {
+        "wc-tab": "Tab container — css typically 'col-1 mt-2 mb-4'",
+        "wc-tab-item": "Individual tab panel — properties: label, css (first tab gets 'active p-4')"
+      },
+      "table": {
+        "wc-tabulator": "Data table — properties: ajax_url, pagination, pagination_size, layout, filter_mode, sort_mode, header_visible, movable_columns, selectable_rows, etc.",
+        "wc-tabulator-column": "Table column — properties: field, title, formatter, formatter_params, header_filter, header_filter_func, visible, width, hoz_align, cell_click, etc.",
+        "wc-tabulator-func": "Custom table function — properties: name, value (onInit, onDelete, onClone)"
+      },
+      "buttons": {
+        "wc-save-split-button": "Save with Save & New / Save & Return dropdown — properties: saveUrl, saveNewUrl, saveReturnUrl, positionArea",
+        "wc-save-button": "Simple save button — properties: label, saveUrl"
+      },
+      "utility": {
+        "wc-hotkey": "Keyboard shortcut — properties: keys, target",
+        "wc-option": "Select option child — properties: label, value"
+      }
+    },
+    "rules": {
+      "description": "Reactive rules attached to elements that define inter-element behavior",
+      "effects": {
+        "COPY": "Copy source value directly to target",
+        "COPY-TOLOWER": "Copy source value, convert to lowercase",
+        "COPY-TOLOWER-UNDERSCORE": "Copy source value, convert to lowercase with underscores replacing spaces",
+        "SHOW": "Show target element when condition is met",
+        "HIDE": "Hide target element when condition is met",
+        "ENABLE": "Enable target element when condition is met",
+        "DISABLE": "Disable target element when condition is met",
+        "REQUIRE": "Make target required when condition is met",
+        "UN-REQUIRE": "Make target optional when condition is met"
+      },
+      "conditionSchema": {
+        "const": "Exact value match",
+        "enum": "Match against array of values",
+        "minimum": "Numeric minimum (inclusive)",
+        "maximum": "Numeric maximum (inclusive)",
+        "minLength": "Minimum string length",
+        "maxLength": "Maximum string length",
+        "pattern": "RegExp pattern match"
+      },
+      "structure": {
+        "effect": "Rule effect type (SHOW, COPY, etc.)",
+        "condition.scope": "JSON pointer to source field",
+        "condition.schema": "Schema constraint to test against",
+        "condition.srcDataId": "data-id of source element",
+        "condition.srcSelector": "CSS selector within source element (e.g., 'input')",
+        "condition.srcProperty": "Property to read from source (e.g., 'value', 'checked')",
+        "tgtDataId": "data-id of target element",
+        "tgtSelector": "CSS selector within target element",
+        "tgtProperty": "Property to modify on target (e.g., 'value', 'textContent', 'display', 'required')"
+      }
+    }
+  },
+  "nunjucksTemplates": {
+    "description": "HTML content for _template_builder is rendered via Nunjucks templates with custom delimiters to avoid Pongo2 conflicts",
+    "customDelimiters": {
+      "blockTags": "[% %] — Nunjucks if, for, block, etc.",
+      "variableTags": "[= =] — Nunjucks variable interpolation",
+      "commentTags": "[# #] — Nunjucks comments",
+      "pongo2BlockTags": "{% %} — passes through as literal Pongo2 output",
+      "pongo2VariableTags": "{{ }} — passes through as literal Pongo2 output"
+    },
+    "templateFiles": {
+      "controls": [
+        "wc-input-string.njk", "wc-input-email.njk", "wc-input-tel.njk", "wc-input-date.njk",
+        "wc-input-boolean.njk", "wc-input-number.njk", "wc-input-integer.njk", "wc-input-checkbox.njk",
+        "wc-input-radio-enum.njk", "wc-input-radio.njk", "wc-textarea.njk",
+        "wc-select-enum.njk", "wc-select-lookup.njk", "wc-select-multiple.njk", "wc-select-multiple-dynamic.njk",
+        "wc-select-multiple-collection.njk", "wc-select-screen-collection.njk", "wc-select-multiple-screen-collection.njk",
+        "input-hidden.njk", "input-boolean.njk", "input-string.njk", "select.njk", "default.njk"
+      ],
+      "listCols": ["string.njk", "string-invisible.njk", "boolean.njk", "boolean-invisible.njk"],
+      "generators": ["edit-content.njk", "list-content.njk", "code-edit.njk", "code-list.njk"],
+      "editForm": ["fieldset.njk", "fieldset-card.njk", "fieldset-table.njk", "default-array.njk"],
+      "layouts": ["card-prefix.njk", "card-suffix.njk", "tab-control-prefix.njk", "tab-control-suffix.njk"]
+    },
+    "customFilters": {
+      "proper": "Converts snake_case to Proper Case (e.g., 'first_name' → 'First Name')"
+    }
+  },
+  "inputSchemaFormat": {
+    "description": "TemplateCraft accepts a clean JSON Schema produced by LiteSpec parseDSL() without UI annotations",
+    "requiredFields": {
+      "properties": "Object of property name → property schema",
+      "title": "Used to derive collectionName if not explicitly provided (optional)"
+    },
+    "optionalFields": {
+      "$defs": "Reusable type definitions referenced via $ref",
+      "required": "Array of required field names",
+      "allOf": "Conditional validation rules (if/then) — used to generate field_rules",
+      "sort": "Default sort order array: [{ name, dir }]",
+      "breadcrumb": "Breadcrumb display config: [{ name, suffix }]"
+    },
+    "propertySchema": {
+      "type": "string, integer, number, boolean, object, array",
+      "format": "email, date-time, date, uuid",
+      "enum": "Array of allowed values",
+      "pattern": "RegExp pattern string",
+      "$ref": "Reference to $defs definition (e.g., '#/$defs/Address')",
+      "items": "For arrays — { type: 'string' } or { $ref: '#/$defs/Member' }",
+      "minimum": "Numeric minimum",
+      "maximum": "Numeric maximum",
+      "minLength": "String minimum length",
+      "maxLength": "String maximum length",
+      "default": "Default value",
+      "anyOf": "LiteSpec nullable date-time pattern: [{ type, format }, { type, enum: [''] }]"
+    },
+    "example": {
+      "title": "Client",
+      "type": "object",
+      "properties": {
+        "first_name": { "type": "string", "minLength": 2, "maxLength": 50 },
+        "last_name": { "type": "string", "minLength": 2, "maxLength": 50 },
+        "email": { "type": "string", "format": "email" },
+        "gender": { "type": "string", "enum": ["male", "female"] },
+        "age": { "type": "integer", "minimum": 14, "maximum": 130 },
+        "is_active": { "type": "boolean", "default": true },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "address": { "type": "object", "$ref": "#/$defs/Address" }
+      },
+      "required": ["first_name", "last_name", "gender"],
+      "$defs": {
+        "Address": {
+          "type": "object",
+          "properties": {
+            "street": { "type": "string" },
+            "city": { "type": "string" },
+            "state": { "type": "string" },
+            "postal_code": { "type": "string" }
+          }
+        }
+      },
+      "sort": [{ "name": "modified_date", "dir": "desc" }],
+      "breadcrumb": [{ "name": "first_name", "suffix": " " }, { "name": "last_name" }]
+    }
+  },
+  "sourceStructure": {
+    "description": "Project file organization",
+    "files": {
+      "src/index.js": "Main entry — generate(), generatePages(), createTemplateDocument(), createPageDocument(), exports",
+      "src/template-engine.js": "Nunjucks environment with custom delimiters, render(), registerTemplate()",
+      "src/inference/infer-control.js": "Schema property → Wave CSS component inference",
+      "src/inference/infer-layout.js": "Property grouping into grid rows, fieldsets, fieldset-cards",
+      "src/inference/infer-list-col.js": "List column type/visibility inference",
+      "src/inference/index.js": "Barrel export for inference module",
+      "src/generators/edit.js": "Edit template HTML content generation",
+      "src/generators/edit-form.js": "Recursive form HTML generation using inference + layout",
+      "src/generators/list.js": "List template HTML content generation",
+      "src/generators/code-tab.js": "Server-side JavaScript code generation (runGet, runPut, runPost, runDelete, runList)",
+      "src/generators/field-rules.js": "Field rules from allOf conditionals (visible, required, clearWhenHidden)",
+      "src/generators/page-layout.js": "json_layout generation for _page documents (edit + list)",
+      "src/layouts/wrappers.js": "Card and tab-control layout wrappers for templates",
+      "src/templates/register.js": "Imports and registers all .njk template files",
+      "src/templates/controls/": "~23 Nunjucks control templates",
+      "src/templates/list-cols/": "4 list column templates",
+      "src/templates/generators/": "edit-content, list-content, code-edit, code-list templates",
+      "src/templates/edit-form/": "fieldset, fieldset-card, fieldset-table, default-array templates",
+      "src/templates/layouts/": "card and tab-control prefix/suffix templates",
+      "src/utils/naming.js": "getProper, getSuffix, toSlug, quoteStrings",
+      "src/utils/schema-helpers.js": "findProperty, normalizeProperties, resolveRef, findArrayTypes, findArrayTypesFromSchema"
+    }
+  },
+  "buildAndTest": {
+    "build": "npm run build — produces dist/template-craft.js (IIFE) and dist/template-craft.min.js",
+    "testPage": "python3 -m http.server 3017 — view at http://localhost:3017/views/",
+    "testButtons": [
+      "Generate Article Templates (_template_builder)",
+      "Generate Client Templates (_template_builder)",
+      "Generate Article Pages (_page)",
+      "Generate Client Pages (_page)"
+    ]
+  },
+  "relatedProjects": {
+    "goKart": {
+      "path": "/Users/matthewduffield/Documents/_learn/go-kart/",
+      "knowledgeBase": "/Users/matthewduffield/Documents/_learn/go-kart/docs/go-kart-knowledge.json",
+      "description": "Low-code enterprise framework — consumes _template_builder and _page documents"
+    },
+    "waveCss": {
+      "path": "/Users/matthewduffield/Documents/_dev/wave-css/",
+      "knowledgeBase": "/Users/matthewduffield/Documents/_dev/wave-css/docs/wave-css-knowledge.json",
+      "description": "Web component library — wc-input, wc-select, wc-tabulator, wc-page-designer, etc."
+    },
+    "liteSpec": {
+      "path": "/Users/matthewduffield/Documents/_dev/lite-spec/",
+      "knowledgeBase": "/Users/matthewduffield/Documents/_dev/lite-spec/docs/lite-spec-knowledge.json",
+      "description": "DSL compiler — produces the clean JSON Schema that TemplateCraft consumes"
+    }
+  }
+}
