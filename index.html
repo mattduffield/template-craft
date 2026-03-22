@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TemplateCraft</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 4rem auto; color: #333; line-height: 1.6; padding: 0 1rem; }
+    h1 { border-bottom: 2px solid #eee; padding-bottom: 0.5rem; }
+    a { color: #0366d6; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code { background: #f4f4f4; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.9em; }
+    pre { background: #f4f4f4; padding: 1rem; border-radius: 6px; overflow-x: auto; }
+    ul { list-style: none; padding: 0; }
+    li { padding: 0.3rem 0; }
+    li::before { content: "📄 "; }
+  </style>
+</head>
+<body>
+  <h1>TemplateCraft</h1>
+  <p>Inference-based template generator for Go Kart.</p>
+
+  <h2>Files</h2>
+  <ul>
+    <li><a href="dist/template-craft.js">template-craft.js</a></li>
+    <li><a href="dist/template-craft.min.js">template-craft.min.js</a></li>
+  </ul>
+
+  <h2>Usage</h2>
+  <pre><code>&lt;script src="dist/template-craft.min.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  const templates = templateCraft.generate(schema, {
+    collectionName: 'client'
+  });
+  const pages = templateCraft.generatePages(schema, {
+    collectionName: 'client'
+  });
+&lt;/script&gt;</code></pre>
+
+  <h2>Test Page</h2>
+  <ul>
+    <li><a href="views/index.html">TemplateCraft Test Generator</a></li>
+  </ul>
+</body>
+</html>
