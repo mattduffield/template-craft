@@ -191,7 +191,7 @@ function generatePages(schema, options = {}) {
 
   if (includeList) {
     const listLayout = generateListPageLayout(schema, collectionName, routePrefix);
-    const listCode = generateListCode();
+    const listCode = generateListCode({ target: 'page' });
 
     pages.push(createPageDocument({
       name: `${properName} List`,
@@ -217,7 +217,7 @@ function generatePages(schema, options = {}) {
 
   if (includeEdit) {
     const editLayout = generateEditPageLayout(schema, collectionName, routePrefix, listSlug);
-    const editCode = generateEditCode({ collectionName, schemaSlug, schema });
+    const editCode = generateEditCode({ collectionName, schemaSlug, schema, target: 'page' });
     let fieldRulesStr = '';
     if (schema.allOf) {
       fieldRulesStr = generateFieldRulesString(schema);

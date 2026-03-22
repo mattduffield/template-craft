@@ -206,7 +206,7 @@ export function generateEditPageLayout(schema, collectionName, routePrefix, list
               required: false,
               rules: [],
               elements: [],
-              link: `/${routePrefix}/home`,
+              link: `/p${routePrefix}/home`,
             },
             {
               'data-id': uid(),
@@ -217,7 +217,7 @@ export function generateEditPageLayout(schema, collectionName, routePrefix, list
               required: false,
               rules: [],
               elements: [],
-              link: `/${routePrefix}/${listSlug}/list`,
+              link: `/p${routePrefix}/${listSlug}/list`,
             },
             {
               'data-id': uid(),
@@ -453,7 +453,7 @@ export function generateListPageLayout(schema, collectionName, routePrefix) {
               required: false,
               rules: [],
               elements: [],
-              link: `/${routePrefix}/home`,
+              link: `/p${routePrefix}/home`,
             },
             {
               'data-id': uid(),
