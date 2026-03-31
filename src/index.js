@@ -2,15 +2,11 @@
  * TemplateCraft — Inference-based template generator for Go Kart
  *
  * Takes a clean JSON Schema (from LiteSpec, no UI annotations) and generates
- * complete _template_builder or _page MongoDB documents by inferring the best
+ * complete _template_builder MongoDB documents by inferring the best
  * Wave CSS components, layout, and structure from schema types and constraints.
  *
  * Usage:
- *   // Generate _template_builder documents
  *   const templates = templateCraft.generate(schema, { collectionName: 'client' });
- *
- *   // Generate _page documents
- *   const pages = templateCraft.generatePages(schema, { collectionName: 'client' });
  */
 
 import './templates/register.js';
@@ -19,7 +15,6 @@ import { generateEditContent } from './generators/edit.js';
 import { generateEditCode, generateListCode } from './generators/code-tab.js';
 import { generateFieldRules, generateFieldRulesString } from './generators/field-rules.js';
 import { generateEditForm } from './generators/edit-form.js';
-import { generateEditPageLayout, generateListPageLayout } from './generators/page-layout.js';
 import { getProper, getSuffix, toSlug, quoteStrings } from './utils/naming.js';
 import { findProperty, findArrayTypes, getAllArrayFields, resolveRef, normalizeProperties, findArrayTypesFromSchema } from './utils/schema-helpers.js';
 import { inferControl, renderInferredControl, inferLayout, inferListCol, generateListColumns } from './inference/index.js';
@@ -165,138 +160,10 @@ function createTemplateDocument({
   };
 }
 
-// --- _page generation ---
-
-/**
- * Generate complete _page documents from a JSON Schema.
- *
- * @param {Object} schema - Clean JSON Schema
- * @param {Object} options
- * @param {string} [options.collectionName] - MongoDB collection name
- * @param {string} [options.routePrefix='x'] - Route prefix ('x' or 'v')
- * @param {boolean} [options.includeList=true] - Generate list page
- * @param {boolean} [options.includeEdit=true] - Generate edit page
- * @returns {Array} Array of _page document objects
- */
-function generatePages(schema, options = {}) {
-  const {
-    routePrefix = 'x',
-    includeList = true,
-    includeEdit = true,
-  } = options;
-
-  const { collectionName, properName, editSlug, listSlug, schemaSlug, now } = resolveOptions(schema, options);
-  const jsonSchemaStr = JSON.stringify(schema, null, 2);
-  const pages = [];
-
-  if (includeList) {
-    const listLayout = generateListPageLayout(schema, collectionName, routePrefix);
-    const listCode = generateListCode({ target: 'page' });
-
-    pages.push(createPageDocument({
-      name: `${properName} List`,
-      slug: listSlug,
-      collectionName,
-      schemaSlug,
-      pageType: 'standard',
-      routePrefix,
-      routeNextPageSlug: editSlug,
-      routePrevPageSlug: '',
-      routeRecordID: '',
-      code: listCode,
-      content: '',
-      fieldRules: '',
-      jsonSchema: jsonSchemaStr,
-      jsonLayout: JSON.stringify(listLayout, null, 2),
-      depends: ['page_base', 'loader', 'page_partial_base'],
-      collections: [collectionName],
-      lookups: [],
-      now,
-    }));
-  }
-
-  if (includeEdit) {
-    const editLayout = generateEditPageLayout(schema, collectionName, routePrefix, listSlug);
-    const editCode = generateEditCode({ collectionName, schemaSlug, schema, target: 'page' });
-    let fieldRulesStr = '';
-    if (schema.allOf) {
-      fieldRulesStr = generateFieldRulesString(schema);
-    }
-
-    pages.push(createPageDocument({
-      name: properName,
-      slug: editSlug,
-      collectionName,
-      schemaSlug,
-      pageType: 'standard',
-      routePrefix,
-      routeNextPageSlug: '',
-      routePrevPageSlug: listSlug,
-      routeRecordID: 'true',
-      code: editCode,
-      content: '',
-      fieldRules: fieldRulesStr,
-      jsonSchema: jsonSchemaStr,
-      jsonLayout: JSON.stringify(editLayout, null, 2),
-      depends: ['page_base', 'loader', 'page_partial_base'],
-      collections: [collectionName],
-      lookups: [],
-      now,
-    }));
-  }
-
-  return pages;
-}
-
-/**
- * Create a complete _page document.
- */
-function createPageDocument({
-  name, slug, collectionName, schemaSlug, pageType, routePrefix,
-  routeNextPageSlug, routePrevPageSlug, routeRecordID,
-  code, content, fieldRules, jsonSchema, jsonLayout,
-  depends, collections, lookups, now,
-}) {
-  return {
-    name,
-    slug,
-    collection_name: collectionName,
-    schema: schemaSlug,
-    page_type: pageType,
-    route_prefix: routePrefix,
-    route_record_id: routeRecordID || 'true',
-    route_next_page_slug: routeNextPageSlug || '',
-    route_prev_page_slug: routePrevPageSlug || '',
-    depend_full_request: 'page_base',
-    depend_partial_request: 'page_partial_base',
-    depends: depends || ['page_base', 'loader', 'page_partial_base'],
-    collections: collections || [],
-    lookups: lookups || [],
-    code,
-    content: content || '',
-    field_rules: fieldRules || '',
-    json_schema: jsonSchema || '',
-    json_layout: jsonLayout || '',
-    reference_key: collectionName,
-    record_status: 'Active',
-    version_number: '0.01',
-    is_core: false,
-    is_active: true,
-    preview_toggle: 'off',
-    drag_toggle: 'off',
-    created_by: '',
-    created_date: now,
-    modified_by: '',
-    modified_date: now,
-  };
-}
-
 // Export all public functions
 export {
   generate,
-  generatePages,
   createTemplateDocument,
-  createPageDocument,
   generateListContent,
   generateEditContent,
   generateEditCode,
@@ -304,8 +171,6 @@ export {
   generateFieldRules,
   generateFieldRulesString,
   generateEditForm,
-  generateEditPageLayout,
-  generateListPageLayout,
   getProper,
   getSuffix,
   toSlug,

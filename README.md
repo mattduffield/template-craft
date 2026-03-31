@@ -1,5 +1,5 @@
 # Template Craft
-This is an inference-based code generator that converts clean JSON Schema into Go Kart `_template_builder` and `_page` documents.
+This is an inference-based code generator that converts clean JSON Schema into Go Kart `_template_builder` documents.
 
 ## Demo
 [Demo Site](https://mattduffield.github.io/template-craft/views/)
@@ -23,20 +23,11 @@ python3 -m http.server 3017
 
 ## Usage
 
-### Generate `_template_builder` documents
 ```js
 const templates = templateCraft.generate(schema, {
   collectionName: 'client',
   routePrefix: 'v',
   templateType: 'tab-control',
-});
-```
-
-### Generate `_page` documents
-```js
-const pages = templateCraft.generatePages(schema, {
-  collectionName: 'client',
-  routePrefix: 'v',
 });
 ```
 
@@ -96,15 +87,3 @@ The generator infers Wave CSS components from schema types — no UI annotations
 | `array` + `items.$ref` | fieldset-card |
 | `object` + `$ref` | fieldset |
 | System fields (`_id`, `created_*`, `modified_*`) | skipped |
-
-## Output Targets
-
-| | `_template_builder` | `_page` |
-|---|---|---|
-| Function | `generate()` | `generatePages()` |
-| Content | HTML (Pongo2 markup) | `json_layout` + `json_schema` |
-| Routes | `/v/`, `/x/` | `/pv/`, `/px/` |
-| Base templates | `base`, `partial-base` | `page_base`, `page_partial_base` |
-| Navigation | `Template.RouteNextTemplateSlug` | `Page.RouteNextPageSlug` |
-| Code tab | Same (runGet, runPut, runPost, runDelete) | Same |
-| Field rules | Same (from allOf conditionals) | Same |

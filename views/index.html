@@ -17,12 +17,8 @@
 </head>
 <body>
   <h1>TemplateCraft — Test Generator</h1>
-  <h3 style="color:#90caf9;margin-top:1rem;">_template_builder</h3>
   <button onclick="runTest()">Generate Article Templates</button>
   <button onclick="runComplexTest()">Generate Client Templates</button>
-  <h3 style="color:#ce93d8;margin-top:1rem;">_page</h3>
-  <button onclick="runPageTest()">Generate Article Pages</button>
-  <button onclick="runComplexPageTest()">Generate Client Pages</button>
   <div id="output" class="output"></div>
 
   <script src="../dist/template-craft.js"></script>
@@ -117,40 +113,6 @@
         templateType: 'tab-control',
       });
       displayResults(templates, 'Client');
-    }
-
-    function runPageTest() {
-      const pages = templateCraft.generatePages(articleSchema, { routePrefix: 'x' });
-      displayPageResults(pages, 'Article');
-    }
-
-    function runComplexPageTest() {
-      const pages = templateCraft.generatePages(clientSchema, { routePrefix: 'v' });
-      displayPageResults(pages, 'Client');
-    }
-
-    function displayPageResults(pages, name) {
-      let html = `<h2>${name} — Generated ${pages.length} pages (_page)</h2>`;
-      for (const page of pages) {
-        const layoutLen = (page.json_layout || '').length;
-        const schemaLen = (page.json_schema || '').length;
-        const codeLen = page.code.length;
-        const rulesLen = (page.field_rules || '').length;
-        html += `
-          <h2>${page.name} (${page.slug})</h2>
-          <p class="stats">Layout: ${layoutLen} chars | Schema: ${schemaLen} chars | Code: ${codeLen} chars | Field Rules: ${rulesLen} chars</p>
-          <p class="stats">Type: ${page.page_type} | Route: /p${page.route_prefix}/${page.slug} | Depends: ${page.depends.join(', ')}</p>
-          <h3>JSON Layout</h3>
-          <pre>${escapeHtml(page.json_layout)}</pre>
-          <h3>Code Tab</h3>
-          <pre>${escapeHtml(page.code)}</pre>
-        `;
-        if (page.field_rules) {
-          html += `<h3>Field Rules</h3><pre>${escapeHtml(page.field_rules)}</pre>`;
-        }
-        html += `<h3>Full Document (JSON)</h3><pre>${escapeHtml(JSON.stringify(page, null, 2))}</pre>`;
-      }
-      document.getElementById('output').innerHTML = html;
     }
 
     function displayResults(templates, name) {
